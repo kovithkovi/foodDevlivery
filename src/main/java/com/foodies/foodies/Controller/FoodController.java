@@ -1,17 +1,13 @@
 package com.foodies.foodies.Controller;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import java.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodies.foodies.IO.FoodRequest;
 import com.foodies.foodies.IO.FoodResponse;
 import com.foodies.foodies.Services.FoodService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,5 +29,21 @@ public class FoodController {
         }
         FoodResponse foodResponse = foodService.addFood(foodResquest, file);
         return foodResponse;
+    }
+
+    @GetMapping
+    public List<FoodResponse> getAllFood() {
+        return foodService.getAllFood();
+    }
+
+    @GetMapping("/{id}")
+    public FoodResponse getFood(@PathVariable String id) {
+        return foodService.getFood(id);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteFood(@PathVariable String id) {
+        String status = foodService.deleteFood(id);
+        return ResponseEntity.ok(status);
     }
 }

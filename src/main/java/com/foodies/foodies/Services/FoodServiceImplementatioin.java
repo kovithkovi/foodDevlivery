@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,12 +25,15 @@ public class FoodServiceImplementatioin implements FoodService {
     @Override
     public String uploadImage(MultipartFile file) {
         try {
-            String fileExtension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".") + 1);
-            String publicId = UUID.randomUUID().toString() + "." + fileExtension;
-            Map m = cloudinary.uploader().upload(file.getBytes(), Map.of("public_id", publicId));
-            if(m.get("secure_url") != null) {
+            String publicId = UUID.randomUUID().toString();
+            Map m = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    Map.of("public_id", publicId)
+            );
+
+            if (m.get("secure_url") != null) {
                 return m.get("secure_url").toString();
-            }else {
+            } else {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Image upload failed");
             }
         } catch (Exception e) {
@@ -45,6 +49,45 @@ public class FoodServiceImplementatioin implements FoodService {
         newFoodEntity.setImageUrl(imageUrl);
         return converttoResponse(foodRepo.save(newFoodEntity));
     }
+
+    @Override
+    public List<FoodResponse> getAllFood() {
+        return foodRepo.findAll().stream()
+                .map(this::converttoResponse)
+                .toList();
+    }
+
+    @Override
+    public FoodResponse getFood(String id) {
+        if (!foodRepo.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Food not found");
+        }
+        return converttoResponse(foodRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Food not found")));
+    }
+    @Override
+    public boolean deleteFile(String filename) {
+        String originalFilenName = filename.substring(filename.lastIndexOf('/') + 1);
+        originalFilenName = originalFilenName.replaceAll("(\\.jpg)+$", ".jpg");
+        System.out.println(originalFilenName);
+        try {
+            Map m = cloudinary.uploader().destroy(originalFilenName, Map.of("invalidate", true));
+            return m.get("result").equals("ok");
+        } catch (Exception e) {
+            System.out.println("Error deleting image: " + e.getMessage());
+        }
+        return false;
+    }
+
+    @Override
+    public String deleteFood(String id) {
+        if (!foodRepo.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Food not found");
+        }
+        FoodResponse food = getFood(id);
+            foodRepo.deleteById(id);
+            return "Food deleted successfully";
+    }
+
     private FoodEntity convertToEntity(FoodRequest request){
         FoodEntity food = new FoodEntity();
         food.setName(request.getName());
